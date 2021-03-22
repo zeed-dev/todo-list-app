@@ -22,6 +22,7 @@ class _CatgoriesScreenState extends State<CatgoriesScreen> {
   List<Category> _categoryList = [];
 
   getAllCategory() async {
+    _categoryList = [];
     var categories = await _categoryService.readCategory();
     categories.forEach((cat) {
       setState(() {
@@ -61,9 +62,11 @@ class _CatgoriesScreenState extends State<CatgoriesScreen> {
                 _category.name = _categoryNameController.text;
                 _category.description = _categoryDescriptionController.text;
                 var result = await _categoryService.saveCategory(_category);
-                print(result);
-                _categoryNameController.clear();
-                _categoryDescriptionController.clear();
+
+                if (result > 0) {
+                  Navigator.pop(context);
+                  getAllCategory();
+                }
               },
               child: Text("Save"),
               color: Colors.blue,
@@ -109,12 +112,16 @@ class _CatgoriesScreenState extends State<CatgoriesScreen> {
             ),
             MaterialButton(
               onPressed: () async {
-                _category.name = _categoryNameController.text;
-                _category.description = _categoryDescriptionController.text;
-                var result = await _categoryService.saveCategory(_category);
-                print(result);
-                _categoryNameController.clear();
-                _categoryDescriptionController.clear();
+                _category.id = category[0]['id'];
+                _category.name = _editCategoryNameController.text;
+                _category.description = _editCategoryDescriptionController.text;
+
+                var result = await _categoryService.updateCategory(_category);
+                if (result > 0) {
+                  Navigator.pop(context);
+                  getAllCategory();
+                  _showSuccessSnackBar("Category Updated");
+                }
               },
               child: Text("Update"),
               color: Colors.blue,
@@ -146,15 +153,54 @@ class _CatgoriesScreenState extends State<CatgoriesScreen> {
     );
   }
 
+  _deleteFormDialog(BuildContext context, categoryId) {
+    return showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          actions: [
+            MaterialButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+              color: Colors.green,
+            ),
+            MaterialButton(
+              onPressed: () async {
+                var result = await _categoryService.deleteCategory(categoryId);
+                if (result > 0) {
+                  Navigator.pop(context);
+                  getAllCategory();
+                  _showSuccessSnackBar("Category Deleted");
+                }
+              },
+              child: Text("Delete"),
+              color: Colors.red,
+            ),
+          ],
+          title: Text("Are you sure you want to delete this?"),
+        );
+      },
+    );
+  }
+
+  _showSuccessSnackBar(message) {
+    var _snackBar = SnackBar(content: Text(message));
+    ScaffoldMessenger.of(context).showSnackBar(_snackBar);
+  }
+
   @override
   void initState() {
     super.initState();
     getAllCategory();
   }
 
+  final GlobalKey<ScaffoldState> _globalKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _globalKey,
       appBar: AppBar(
         leading: MaterialButton(
           onPressed: () => Navigator.push(
@@ -194,10 +240,13 @@ class _CatgoriesScreenState extends State<CatgoriesScreen> {
                         Icons.delete,
                         color: Colors.red,
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        _deleteFormDialog(context, _categoryList[index].id);
+                      },
                     ),
                   ],
                 ),
+                subtitle: Text(_categoryList[index].description),
               ),
             ),
           );

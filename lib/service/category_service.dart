@@ -13,8 +13,13 @@ class CategoryService {
     return await _repository.insertData('categories', category.categoryMap());
   }
 
-  // Read Data
+  // Read Data from table
   readCategory() async {
     return _repository.readData('categories');
+  }
+
+  // Read Data from table by id
+  readCategoryById(categoryId) async {
+    return await _repository.readDataById('categories', categoryId);
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_todo_list/models/todos.dart';
 import 'package:flutter_todo_list/service/category_service.dart';
+import 'package:flutter_todo_list/service/todo_service.dart';
 import 'package:intl/intl.dart';
 
 class TodoScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class _TodoScreenState extends State<TodoScreen> {
   var _selectedValue;
   List<DropdownMenuItem> _categories = [];
   DateTime _dateTime = DateTime.now();
+  final GlobalKey<ScaffoldState> _globalKey = GlobalKey<ScaffoldState>();
 
   _selectedTodoDate(BuildContext context) async {
     var _pickDate = await showDatePicker(
@@ -28,6 +31,11 @@ class _TodoScreenState extends State<TodoScreen> {
       _dateTime = _pickDate;
       _todoDateController.text = DateFormat('yyyy-MM-dd').format(_dateTime);
     }
+  }
+
+  _showSuccessSnackBar(message) {
+    var _snackBar = SnackBar(content: Text(message));
+    ScaffoldMessenger.of(context).showSnackBar(_snackBar);
   }
 
   _loadCategories() async {
@@ -54,6 +62,7 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _globalKey,
       appBar: AppBar(
         title: Text("Create Todo"),
       ),
@@ -115,7 +124,25 @@ class _TodoScreenState extends State<TodoScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () async {
+                    var todoObject = Todo();
+
+                    todoObject.title = _todoTitleController.text;
+                    todoObject.description = _todoDescriptionController.text;
+                    todoObject.todoDate = _todoDateController.text;
+                    todoObject.isFinished = 0;
+                    todoObject.category = _selectedValue.toString();
+
+                    var _todoService = TodoService();
+                    var result = await _todoService.saveTodo(todoObject);
+
+                    if (result > 0) {
+                      _showSuccessSnackBar("Todos added");
+                      _todoTitleController.clear();
+                      _todoDescriptionController.clear();
+                      _todoDateController.clear();
+                    }
+                  },
                 ),
               ),
             ],
